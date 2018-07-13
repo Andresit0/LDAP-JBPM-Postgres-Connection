@@ -11,35 +11,23 @@ alter table mails add column jbpm_user_password varchar;
 
 --Creacion de la función que utilizará el trigger 
 create or replace function jbpmPassword() returns trigger as
---------------------------------------------------------
 $$
---------------------------------------------------------
 declare
---------------------------------------------------------
 	userpassword varchar;
-  --------------------------------------------------------
 begin
---------------------------------------------------------
-	select concat_ws('=',mail,New.password ) into userpassword from mails,persons 
-  --------------------------------------------------------
+    select concat_ws('=',mail,New.password ) into userpassword from mails,persons 
     where mails.pers_id = Old.id and persons.id = Old.id;
-    --------------------------------------------------------
     update mails set jbpm_user_password = userpassword where pers_id = Old.id;
-    --------------------------------------------------------
     copy public.mails (jbpm_user_password) TO '/home/andresito/Desktop/grabar/user.properties' CSV;
-    --------------------------------------------------------
     return NEW;
-    --------------------------------------------------------
 end;
---------------------------------------------------------
 $$
---------------------------------------------------------
 Language plpgsql;
---------------------------------------------------------
 
 --Creación del trigger que se ejecutará antes de hacer un UPDATE
 
 create trigger jbpmUserPassword before update on persons
---------------------------------------------------------
 for each row execute procedure jbpmPassword();
---------------------------------------------------------
+
+Nota en caso de haber seguido lo correspondiente al GithHub https://github.com/Andresit0/LDAP-Postgres-Connection que indica el "manual_de_configuracion", con solo copiar, pegar y correr el contenido del archivo "funciones_y_triggers" cambiando la dirección 
+/home/andresito/Desktop/grabar/user.properties por la que contenga el archivo "user.properties" ubicado en la dirección de su JBPM ya estará finalizado la configuración de password y usuarios entre LDAP y JBPM.
