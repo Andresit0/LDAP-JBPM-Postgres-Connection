@@ -33,7 +33,7 @@ Entonces para ello en PgAdmin4:
 
 Nota1: cuando se graba desde postgres archivos es necesario dar los permisos correspondientes a los mismos, para ello dar clic derecho al archivo user.properties y cada carpeta de instalación de jBPM y en la parte correspondiente a permisos dar permisos de lectura y escritura al dueño y grupos.
 
-Nota2: en caso de haber seguido lo correspondiente a Nota1 y GithHub https://github.com/Andresit0/LDAP-Postgres-Connection que indica el "manual_de_configuracion.pdf", con solo copiar, pegar y correr el contenido del archivo "funciones_y_triggers" cambiando la dirección 
+Nota2: en caso de haber seguido lo correspondiente a Nota1 y GithHub https://github.com/Andresit0/LDAP-Postgres-Connection que indica el "manual_de_configuracion.pdf", con solo copiar, pegar y correr el contenido del archivo "funciones y triggers" adjunto, cambiando la dirección 
 /home/andresito/jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties por la que contenga el archivo "users.properties" ubicado en la dirección de su JBPM ya estará finalizado la configuración de password y usuarios entre LDAP y JBPM.
 
 Por tanto ya se podria administrar los usuarios del JBPM desde Apache Directory Studio
