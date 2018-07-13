@@ -9,24 +9,25 @@ alter table mails add column jbpm_user_password varchar;
 2) Crear trigger para que cuando guarde con LDAP nuevos usuarios guarde automaticamente la clave en el formato que necesita jbpm. Este trigger esta hecho para que primero se cree un mail y luego se puedan insertar claves, es importante esperar un momento luego de insertar el mail en el apache directory studio antes de insertar la clave caso contrario la misma desaparece
 
 --Creacion de la función que utilizará el trigger 
-create or replace function jbpmPassword() returns trigger as
-$$
-declare
+
+	create or replace function jbpmPassword() returns trigger as
+	$$
+	declare
 	userpassword varchar;
-begin
-    select concat_ws('=',mail,New.password ) into userpassword from mails,persons 
-    where mails.pers_id = Old.id and persons.id = Old.id;
-    update mails set jbpm_user_password = userpassword where pers_id = Old.id;
-    copy public.mails (jbpm_user_password) TO '/home/andresito/Instalacion jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/user.properties' CSV;
-    return NEW;
-end;
-$$
-Language plpgsql;
+	begin
+   	 select concat_ws('=',mail,New.password ) into userpassword from mails,persons 
+    	where mails.pers_id = Old.id and persons.id = Old.id;
+    	update mails set jbpm_user_password = userpassword where pers_id = Old.id;
+    	copy public.mails (jbpm_user_password) TO '/home/andresito/Instalacion jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/user.properties' CSV;
+    	return NEW;
+	end;
+	$$
+	Language plpgsql;
 
 --Creación del trigger que se ejecutará antes de hacer un UPDATE
 
-create trigger jbpmUserPassword before update on persons
-for each row execute procedure jbpmPassword();
+	create trigger jbpmUserPassword before update on persons
+	for each row execute procedure jbpmPassword();
 
 Nota en caso de haber seguido lo correspondiente al GithHub https://github.com/Andresit0/LDAP-Postgres-Connection que indica el "manual_de_configuracion", con solo copiar, pegar y correr el contenido del archivo "funciones_y_triggers" cambiando la dirección 
 /home/andresito/Instalacion jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/user.properties por la que contenga el archivo "user.properties" ubicado en la dirección de su JBPM ya estará finalizado la configuración de password y usuarios entre LDAP y JBPM.
