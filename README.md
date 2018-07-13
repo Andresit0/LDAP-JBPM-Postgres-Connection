@@ -18,7 +18,7 @@ Entonces para ello en PgAdmin4:
    	 select concat_ws('=',mail,New.password ) into userpassword from mails,persons 
     	where mails.pers_id = Old.id and persons.id = Old.id;
     	update mails set jbpm_user_password = userpassword where pers_id = Old.id;
-    	copy public.mails (jbpm_user_password) TO '/home/andresito/Instalacion jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/user.properties' CSV;
+    	copy public.mails (jbpm_user_password) TO '/home/andresito/jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties' CSV;
     	return NEW;
 	end;
 	$$
@@ -29,6 +29,6 @@ Entonces para ello en PgAdmin4:
 	create trigger jbpmUserPassword before update on persons
 	for each row execute procedure jbpmPassword();
 
-Nota1: cuando se graba desde postgres archivos es necesario dar los permisos correspondientes a los mismos, para ello dar clic derecho al archivo user.properties y en la parte correspondiente a permisos dar permisos de lectura y escritura al dueño y grupos.
+Nota1: cuando se graba desde postgres archivos es necesario dar los permisos correspondientes a los mismos, para ello dar clic derecho al archivo user.properties y cada carpeta de instalación de jBPM y en la parte correspondiente a permisos dar permisos de lectura y escritura al dueño y grupos.
 Nota2: en caso de haber seguido lo correspondiente a Nota1 y GithHub https://github.com/Andresit0/LDAP-Postgres-Connection que indica el "manual_de_configuracion.pdf", con solo copiar, pegar y correr el contenido del archivo "funciones_y_triggers" cambiando la dirección 
-/home/andresito/Instalacion jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/user.properties por la que contenga el archivo "user.properties" ubicado en la dirección de su JBPM ya estará finalizado la configuración de password y usuarios entre LDAP y JBPM.
+/home/andresito/jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties por la que contenga el archivo "users.properties" ubicado en la dirección de su JBPM ya estará finalizado la configuración de password y usuarios entre LDAP y JBPM.
