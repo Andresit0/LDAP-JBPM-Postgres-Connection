@@ -1,3 +1,5 @@
+# CONFIGURACION DE ADMINISTRACIÓN DE USARIOS DE LDAP Y JBPM DESDE APACHE DIRECTORY STUDIO
+
 La instalación descrita es para tener el logeo que se realiza en LDAP interconectada con la que se realiza con JBPM para ello es necesario tener configurado LDAP con postgres y JBPM con postgres, estas instalaciones se las puede ver en el pdf adjunto llamado "manual_de_configuracion.pdf".
 Entonces una vez realizado los pasos del manual de configuración es necesario manipular la base de datos del LDAP en lo que corresponde a usuario y contraseña para ello en nuestro caso se ha decidido insertar el usuario y contraseña del JBPM en la tabla email del LDAP ya que esta contiene con tiene los usuarios(emails) con los que se logearan por medio de LDAP y JBPM. 
 Entonces para ello en PgAdmin4:
@@ -30,5 +32,8 @@ Entonces para ello en PgAdmin4:
 	for each row execute procedure jbpmPassword();
 
 Nota1: cuando se graba desde postgres archivos es necesario dar los permisos correspondientes a los mismos, para ello dar clic derecho al archivo user.properties y cada carpeta de instalación de jBPM y en la parte correspondiente a permisos dar permisos de lectura y escritura al dueño y grupos.
+
 Nota2: en caso de haber seguido lo correspondiente a Nota1 y GithHub https://github.com/Andresit0/LDAP-Postgres-Connection que indica el "manual_de_configuracion.pdf", con solo copiar, pegar y correr el contenido del archivo "funciones_y_triggers" cambiando la dirección 
 /home/andresito/jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties por la que contenga el archivo "users.properties" ubicado en la dirección de su JBPM ya estará finalizado la configuración de password y usuarios entre LDAP y JBPM.
+
+Por tanto ya se podria administrar los usuarios del JBPM desde Apache Directory Studio
