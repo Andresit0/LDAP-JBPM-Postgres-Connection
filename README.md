@@ -1,0 +1,1 @@
+La instalación descrita es para tener el logeo que se realiza en LDAP igual que la que se se realiza con JBPM para ello es necesario ya tener configurado LDAP con postgres y JBPM con postgres, estas instalaciones se las puede ver en el pdf adjunto llamado "manual_de_configuracion"
