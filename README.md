@@ -1,39 +1,95 @@
 # CONFIGURACION DE ADMINISTRACIÓN DE USARIOS DE LDAP Y JBPM DESDE APACHE DIRECTORY STUDIO
 
-La instalación descrita es para tener el logeo que se realiza en LDAP interconectada con la que se realiza con JBPM para ello es necesario tener configurado LDAP con postgres y JBPM con postgres, estas instalaciones se las puede ver en el pdf adjunto llamado "manual_de_configuracion.pdf".
-Entonces una vez realizado los pasos del manual de configuración es necesario manipular la base de datos del LDAP en lo que corresponde a usuario y contraseña para ello en nuestro caso se ha decidido insertar el usuario y contraseña del JBPM en la tabla email del LDAP ya que esta contiene con tiene los usuarios(emails) con los que se logearan por medio de LDAP y JBPM. 
-Entonces para ello en PgAdmin4:
+La instalación descrita es para tener interconectado el LDAP con el JBPM para ello es necesario tener configurado LDAP con postgres y JBPM con postgres, estas instalaciones se las puede ver en el pdf llamado "manual_de_configuracion.pdf".
 
-1) Añadir una nueva columna a mails en la cual se insertaran los datos correspondientes al password y username del txt de jbpm
+Entonces una vez realizado los pasos del manual de configuración es necesario manipular la base de datos del LDAP, aquí es importante indicar que se pueden crear funciones, triggers, etc sin restricciones tomando en cuenta que el programa que conectemos para visualizacion como puede ser Apache Directory Studio, JExplorer, etc., haran las llamadas que se encuentran en la base de datos del LDAP en la tabla ldap_attr_mappings la cual fue creada con la metadata del ldap.
 
-		alter table mails add column jbpm_user_password varchar;
+Como la conexion con el JBPM depende de los archivos "users.properties" y "roles.properties" ubicados en /home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties en nuestro caso, es necesario hacer que los usuarios que se inserten en LDAP esten interconectados con estos archivos a travez del postgres. Para ello hay que dar permisos para modificación de los archivos por esta razon desde el terminal se ejecuta 
 
-2) Crear trigger para que cuando guarde con LDAP nuevos usuarios guarde automaticamente la clave en el formato que necesita jbpm. Este trigger esta hecho para que primero se cree un mail y luego se puedan insertar claves, es importante esperar un momento luego de insertar el mail en el apache directory studio antes de insertar la clave caso contrario la misma desaparece
+	chmod -R 777 /home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration
 
---Creacion de la función que utilizará el trigger 
+por otra parte creamos dos funciones que modifiquen los archivos, la que modifica "users.properties":
 
-	create or replace function jbpmPassword() returns trigger as
-	$$
-	declare
-	userpassword varchar;
-	begin
-   	 select concat_ws('=',mail,New.password ) into userpassword from mails,persons 
-    	where mails.pers_id = Old.id and persons.id = Old.id;
-    	update mails set jbpm_user_password = userpassword where pers_id = Old.id;
-    	copy public.mails (jbpm_user_password) TO '/home/andresito/jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties' CSV;
-    	return NEW;
-	end;
-	$$
-	Language plpgsql;
+	-- FUNCTION: public.print_mail_password()
 
---Creación del trigger que se ejecutará antes de hacer un UPDATE
+	-- DROP FUNCTION public.print_mail_password();
 
-	create trigger jbpmUserPassword before update on persons
-	for each row execute procedure jbpmPassword();
+	CREATE OR REPLACE FUNCTION public.print_mail_password(
+		)
+  	  RETURNS integer
+  	  LANGUAGE 'sql'
 
-Nota1: cuando se graba desde postgres archivos es necesario dar los permisos correspondientes a los mismos, para ello dar clic derecho al archivo user.properties y cada carpeta de instalación de jBPM y en la parte correspondiente a permisos dar permisos de lectura y escritura al dueño y grupos.
+  	  COST 100
+  	  VOLATILE 
+	AS $BODY$
 
-Nota2: en caso de haber seguido lo correspondiente a Nota1 y GithHub https://github.com/Andresit0/LDAP-Postgres-Connection que indica el "manual_de_configuracion.pdf", con solo copiar, pegar y correr el contenido del archivo "funciones y triggers" adjunto, cambiando la dirección 
-/home/andresito/jBPM/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties por la que contenga el archivo "users.properties" ubicado en la dirección de su JBPM ya estará finalizado la configuración de password y usuarios entre LDAP y JBPM.
+   	 copy (select concat_ws('=',mail,password) from mails, persons where mails.pers_id = persons.id) TO '/home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties';
+   	 select max(id) from persons;
 
-Por tanto ya se podria administrar los usuarios del JBPM desde Apache Directory Studio
+	$BODY$;
+
+	ALTER FUNCTION public.print_mail_password()
+   	 OWNER TO postgres;
+
+y la que modifica "roles.properties": 
+
+	-- FUNCTION: public.add_description(character varying, integer)
+
+	-- DROP FUNCTION public.add_description(character varying, integer);
+
+	CREATE OR REPLACE FUNCTION public.add_description(
+		character varying,
+		integer)
+   	 RETURNS integer
+   	 LANGUAGE 'sql'
+
+   	 COST 100
+   	 VOLATILE 
+	
+	AS $BODY$
+	select setval ('descriptions_id_seq', (select case when max(id) is null then 1 else max(id) end from descriptions));
+	insert into descriptions (id,description,pers_id) 
+    	values (nextval('descriptions_id_seq'),$1,$2);
+    	copy public.descriptions (description) TO '/home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/roles.properties';    	
+    	select max(id) from descriptions;
+
+	$BODY$;
+
+	ALTER FUNCTION public.add_description(character varying, integer)
+   	 OWNER TO postgres;
+
+Estas funciones la podemos ejecutar con triggers en el momento de hacer inserciones, updates, etc., o como en nuestro caso cada vez que se hace una insercion o modificacion del password y descripcion para ello en el caso de la modificacion del password se hizo que se ejecute la funcion cuando el ldap inserta el mismo a travez de la tabla ldap_attr_mappings de la siguiente manera:
+
+	update ldap_attr_mappings set add_proc =
+	(select  $aesc6$UPDATE persons SET password=? WHERE id=?; select print_mail_password()$aesc6$)
+	where id=5
+
+mientras que en el caso de la descripción se realizo esta ejecución cuando se utiliza la funcion add_description agregandole la linea "copy public.descriptions (description) TO '/home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/roles.properties';" que dando asi:
+
+	-- FUNCTION: public.add_description(character varying, integer)
+
+	-- DROP FUNCTION public.add_description(character varying, integer);
+
+	CREATE OR REPLACE FUNCTION public.add_description(
+		character varying,
+		integer)
+   	 RETURNS integer
+   	 LANGUAGE 'sql'
+
+  	  COST 100
+  	  VOLATILE 
+   	 ROWS 0
+	AS $BODY$
+
+	select setval ('descriptions_id_seq', (select case when max(id) is null then 1 else max(id) end from descriptions));
+	insert into descriptions (id,description,pers_id) 
+    	values (nextval('descriptions_id_seq'),$1,$2);
+    	copy public.descriptions (description) TO '/home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/roles.properties';    	
+    	select max(id) from descriptions;
+
+	$BODY$;
+
+	ALTER FUNCTION public.add_description(character varying, integer)
+    	OWNER TO postgres;
+
+Por tanto ya se podria administrar los usuarios del JBPM desde Apache Directory Studio, JEXPLORER, etc. hay que tomar en cuenta que las funciones se ejecutan cuando corro estos programas mas no cuando hago cambios en el postgres sin embargo todos los cambios que se hagan en el postgres s veran en el Apache Directory Studio, JEXPLORER, etc. y se puede hacer que se grabe en el 
