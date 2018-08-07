@@ -92,4 +92,11 @@ mientras que en el caso de la descripción se realizo esta ejecución cuando se 
 	ALTER FUNCTION public.add_description(character varying, integer)
     	OWNER TO postgres;
 
-Por tanto ya se podria administrar los usuarios del JBPM desde Apache Directory Studio, JEXPLORER, etc. hay que tomar en cuenta que las funciones se ejecutan cuando corro estos programas mas no cuando hago cambios en el postgres sin embargo todos los cambios que se hagan en el postgres s veran en el Apache Directory Studio, JEXPLORER, etc. y se puede hacer que se grabe en el 
+Por tanto ya se podria administrar los usuarios del JBPM desde Apache Directory Studio, JEXPLORER, etc. hay que tomar en cuenta que las funciones se ejecutan cuando corro estos programas mas no cuando hago cambios en el postgres sin embargo todos los cambios que se hagan en el postgres se veran en el Apache Directory Studio, JEXPLORER, etc. y se puede hacer que se grabe en los documentos deseados desde el postgres con:
+
+	copy public.descriptions (description) TO '/home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/users.properties'; 
+	copy public.descriptions (description) TO '/home/rfam/jbpm/jbpm-installer/wildfly-8.1.0.Final/standalone/configuration/roles.properties'; 
+
+aquí se prefirio no hacer un trigger para no estar grabando a cada rato que hagamos cambios directo en el postgres si no una sola vez cuando se hagan terminado de hacer los cambios deseados directamente en la base de datos con la finalidad de minimizar el uso de recursos.
+
+Nota: Lo que se esta haciendo es copiar los atributos de las tablas que necesitamos en los archivos deseados pero todos los atrbutos, por lo que para optimizar seria necesario buscar el comando de postgres que permita modicar el archivo (no reemplazarlo como sucede ahora) con la finalidad de que cada nuevo dato que se inserte se vaya colocando, sin embargo abria que tener encuenta borrados de datos, triggers que se deben crear, etc.
